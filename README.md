@@ -1,7 +1,9 @@
 # Project: Secure Serverless Multi-tier Application
 **Author:** Victor Ponce | **Contact:** [Linkedin](https://www.linkedin.com/in/victorhugoponce) | **Website:** [victorponce.com](https://victorponce.com)
 
-**Versión en Español:** [README.es.md](https://github.com/victorhponcec/portfolio-3tier-serverless-pbc/blob/main/README.es.md)
+🇪🇸 **Versión en Español:** [README.es.md](https://github.com/victorhponcec/portfolio-3tier-serverless-pbc/blob/main/README.es.md)
+
+**Notas:** *The code for this project is in a private repository. Feel free to contact me if you want to access it.* 
 
 ## 1. Overview
 
@@ -85,6 +87,12 @@ Users do not need authentication for this workflow. They access the posts throug
 
 This Lambda retrieves the posts from the DynamoDB Posts table. API Gateway sends the response back to the CloudFront distribution, which then returns the information to the user.
 
+<div align="center">
+
+![Overview Diagram](README/read-workflow.png)
+<p><em>(img. 2 – Read Workflow)</em></p>
+</div>
+
 ### 5.2 Write Workflow
 
 This workflow allows users to post content to the application. They access the service through a custom domain (Route 53), which redirects to a CloudFront distribution.
@@ -92,6 +100,12 @@ This workflow allows users to post content to the application. They access the s
 API Gateway requires authorization to access the POST /post HTTP API endpoint, which is handled by Cognito. The API invokes the Write Post Lambda.
 
 The process of writing to the database is decoupled using a FIFO queue (Main SQS) to temporarily store the posts. These messages are taken one by one, in order of arrival, by the Process Post Lambda function, which inserts them into the Posts table.
+
+<div align="center">
+
+![Overview Diagram](README/write-workflow.png)
+<p><em>(img. 3 – Write Workflow)</em></p>
+</div>
 
 ### 5.3 Retry Workflow
 
@@ -116,6 +130,12 @@ resource "aws_sqs_queue_redrive_policy" "posts_redrive" {
 }
 ```
 
+<div align="center">
+
+![Overview Diagram](README/retry-workflow.png)
+<p><em>(img. 4 – Retry Workflow)</em></p>
+</div>
+
 ## 6. Monitoring
 
 Three CloudWatch alarms are in place to monitor the health of the Main SQS and DLQ SQS queues. The alarms trigger an SNS topic that notifies stakeholders via email (img. 2). The details of each alarm are shown in Table 3.
@@ -136,7 +156,7 @@ Three CloudWatch alarms are in place to monitor the health of the Main SQS and D
 <div align="center">
 
 ![Overview Diagram](README/sns-notification.png)
-<p><em>(img. 2 – SNS Email Notification)</em></p>
+<p><em>(img. 5 – SNS Email Notification)</em></p>
 </div>
 
 ## 7. Security
@@ -190,7 +210,7 @@ We start the Write(post) workflow by passing the Coginto Token and the content t
 <div align="center">
 
 ![Overview Diagram](README/test-post-cloudfront-token-cognito.png)
-<p><em>(img. 3 – Cloudfront invoke with Cognito Token)</em></p>
+<p><em>(img. 6 – Cloudfront invoke with Cognito Token)</em></p>
 </div>
 
 Notice that if we don’t pass the token we won’t be able to start the workflow, receiving an authorized message: 
@@ -198,7 +218,7 @@ Notice that if we don’t pass the token we won’t be able to start the workflo
 <div align="center">
 
 ![Overview Diagram](README/test-post-cloudfront-unauthorized-cognito.png)
-<p><em>(img. 4 – Cloudfront invoke without Cognito Token)</em></p>
+<p><em>(img. 7 – Cloudfront invoke without Cognito Token)</em></p>
 </div>
 
 We can verify the state of the messages in the AWS Console. In the capture below we can see the Main and DLQ SQS queues. “Messages in Flight” are being processed by the corresponding lambda functions, meanwhile “Messages Availables” are waiting processing:
@@ -206,7 +226,7 @@ We can verify the state of the messages in the AWS Console. In the capture below
 <div align="center">
 
 ![Overview Diagram](README/sqs-test.png)
-<p><em>(img. 5 – SQS Queues)</em></p>
+<p><em>(img. 8 – SQS Queues)</em></p>
 </div>
 
 Messages processed correctly are written to the **Posts DynamoDB table**:
@@ -214,7 +234,7 @@ Messages processed correctly are written to the **Posts DynamoDB table**:
 <div align="center">
 
 ![Overview Diagram](README/dynamodb-posts.png)
-<p><em>(img. 6 – DynamoDB Posts Table)</em></p>
+<p><em>(img. 9 – DynamoDB Posts Table)</em></p>
 </div>
 
 Messages that failed are inserted into the the **PostDQL DynamoDB table** and once they were reprocessed correctly they change their status to PROCESSED_OK:
@@ -222,13 +242,13 @@ Messages that failed are inserted into the the **PostDQL DynamoDB table** and on
 <div align="center">
 
 ![Overview Diagram](README/dynamodb-postsdlq.png)
-<p><em>(img. 7 – DynamoDB PostDLQ Table)</em></p>
+<p><em>(img. 10 – DynamoDB PostDLQ Table)</em></p>
 </div>
 
 <div align="center">
 
 ![Overview Diagram](README/dynamodb-postsdlq-json.png)
-<p><em>(img. 8 – JSON Payload for PostDLQ)</em></p>
+<p><em>(img. 11 – JSON Payload for PostDLQ)</em></p>
 </div>
 
 Finally, we can verify our **Read** workflow by invoking the **/feed** http endpoint through Cloudfront which will return all the registries from the Posts table:
@@ -236,7 +256,7 @@ Finally, we can verify our **Read** workflow by invoking the **/feed** http endp
 <div align="center">
 
 ![Overview Diagram](README/test-feed-cloudfront.png)
-<p><em>(img. 9 – Cloudfront Invoke for Read Workflow)</em></p>
+<p><em>(img. 12 – Cloudfront Invoke for Read Workflow)</em></p>
 </div>
 
 ## 9. Conclusion

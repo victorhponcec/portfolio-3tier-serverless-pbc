@@ -1,7 +1,9 @@
 # Proyecto: Aplicación Multi-capa Serverless Segura
 **Autor:** Victor Ponce | **Contacto:** [Linkedin](https://www.linkedin.com/in/victorhugoponce) | **Sitio Web:** [victorponce.com](https://victorponce.com)
 
-**English Version:** [README.md](https://github.com/victorhponcec/portfolio-3tier-serverless-pbc/blob/main/README.md)
+🇬🇧 **English Version:** [README.md](https://github.com/victorhponcec/portfolio-3tier-serverless-pbc/blob/main/README.md)
+
+**Notas:** *El código para este proyecto se encuentra en un repositorio privado. Contactar conmigo si desean acceder a él.* 
 
 ## 1. Resumen General
 
@@ -75,11 +77,23 @@ A continuación, la configuración detallada de las tablas:
 
 No requiere autenticación. Los usuarios acceden vía Route 53 y CloudFront, el cual llama al endpoint (GET /feed) en API Gateway, invocando la Lambda de lectura que consulta la tabla "Posts" en DynamoDB.
 
+<div align="center">
+
+![Overview Diagram](README/read-workflow.png)
+<p><em>(img. 2 – Read Workflow)</em></p>
+</div>
+
 ### 5.2 Flujo de Escritura (Write)
 
 Permite publicar contenido. El acceso es vía CloudFront y API Gateway, pero este último exige autorización mediante Cognito para el endpoint (POST /post). 
 
 Este proceso se encuentra desacoplado: El lambda de Escritura (Write Post) envía los mensajes a una cola SQS FIFO. La Lambda de Procesamiento (Process Post) consume los mensajes en orden y los inserta en la tabla "Posts".
+
+<div align="center">
+
+![Overview Diagram](README/write-workflow.png)
+<p><em>(img. 3 – Write Workflow)</em></p>
+</div>
 
 ### 5.3 Flujo de Reintentos (Retry)
 
@@ -97,6 +111,12 @@ resource "aws_sqs_queue_redrive_policy" "posts_redrive" {
   })
 }
 ```
+
+<div align="center">
+
+![Overview Diagram](README/retry-workflow.png)
+<p><em>(img. 4 – Retry Workflow)</em></p>
+</div>
 
 ## 6. Monitoreo
 
@@ -117,7 +137,7 @@ Se configuraron tres alarmas de CloudWatch para supervisar la salud de las colas
 <div align="center">
 
 ![Overview Diagram](README/sns-notification.png)
-<p><em>(img. 2 – SNS Email Notificación)</em></p>
+<p><em>(img. 5 – SNS Email Notificación)</em></p>
 </div>
 
 ## 7. Seguridad
@@ -177,7 +197,7 @@ El flujo Write se prueba enviando el token de Cognito junto con el contenido hac
 <div align="center">
 
 ![Overview Diagram](README/test-post-cloudfront-token-cognito.png)
-<p><em>(img. 3 – Invocación a Cloudfront con Token de Cognito)</em></p>
+<p><em>(img. 6 – Invocación a Cloudfront con Token de Cognito)</em></p>
 </div>
 
 Si el token no es enviado, la solicitud es rechazada por falta de autorización.
@@ -185,7 +205,7 @@ Si el token no es enviado, la solicitud es rechazada por falta de autorización.
 <div align="center">
 
 ![Overview Diagram](README/test-post-cloudfront-unauthorized-cognito.png)
-<p><em>(img. 4 – Invocación a Cloudfront sin Token de Cognito)</em></p>
+<p><em>(img. 7 – Invocación a Cloudfront sin Token de Cognito)</em></p>
 </div>
 
 Podemos verificar el estado de los mensajes en la consola de AWS. En la captura de abajo se observan las colas SQS principal (MAIN SQS) y la de dead-letter queues (DLQ SQS). Los mensajes en tránsito ("Messages in Flight") están siendo procesados por las funciones Lambda correspondientes, mientras que los mensajes disponibles ("Messages Available") están a la espera de ser procesados:
@@ -193,7 +213,7 @@ Podemos verificar el estado de los mensajes en la consola de AWS. En la captura 
 <div align="center">
 
 ![Overview Diagram](README/sqs-test.png)
-<p><em>(img. 5 – SQS Queues)</em></p>
+<p><em>(img. 8 – SQS Queues)</em></p>
 </div>
 
 Los mensajes procesados correctamente son escritos en la tabla **Posts**:
@@ -201,7 +221,7 @@ Los mensajes procesados correctamente son escritos en la tabla **Posts**:
 <div align="center">
 
 ![Overview Diagram](README/dynamodb-posts.png)
-<p><em>(img. 6 – Tabla DynamoDB Posts)</em></p>
+<p><em>(img. 9 – Tabla DynamoDB Posts)</em></p>
 </div>
 
 Los mensajes que fallan se insertan en la tabla **PostsDLQ** de DynamoDB y, una vez que son procesados correctamente tras el reintento, su estado cambia a PROCESSED_OK:
@@ -209,13 +229,13 @@ Los mensajes que fallan se insertan en la tabla **PostsDLQ** de DynamoDB y, una 
 <div align="center">
 
 ![Overview Diagram](README/dynamodb-postsdlq.png)
-<p><em>(img. 7 – Tabla DynamoDB PostDLQ)</em></p>
+<p><em>(img. 10 – Tabla DynamoDB PostDLQ)</em></p>
 </div>
 
 <div align="center">
 
 ![Overview Diagram](README/dynamodb-postsdlq-json.png)
-<p><em>(img. 8 – JSON Payload para PostDLQ)</em></p>
+<p><em>(img. 11 – JSON Payload para PostDLQ)</em></p>
 </div>
 
 Finalmente, podemos verificar nuestro flujo de Lectura invocando el endpoint HTTP **/feed** a través de CloudFront, el cual devuelve todos los registros de la tabla Posts:
@@ -223,7 +243,7 @@ Finalmente, podemos verificar nuestro flujo de Lectura invocando el endpoint HTT
 <div align="center">
 
 ![Overview Diagram](README/test-feed-cloudfront.png)
-<p><em>(img. 9 – Invocación a Cloudfront para flujo Read)</em></p>
+<p><em>(img. 12 – Invocación a Cloudfront para flujo Read)</em></p>
 </div>
 
 ## Conclusión
