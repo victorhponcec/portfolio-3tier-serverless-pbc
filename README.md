@@ -1,5 +1,7 @@
-# portfolio-3tier-serverless
+# Project: Secure Serverless Multi-tier Application
+**Author:** Victor Ponce | **Contact:** [Linkedin](https://www.linkedin.com/in/victorhugoponce) | **Website:** [victorponce.com](https://victorponce.com)
 
+**Versión en Español:** [README.es.md](https://github.com/victorhponcec/portfolio-disaster-recovery-multi-region/blob/main/README.es.md)
 
 ## 1. Overview
 
@@ -145,7 +147,7 @@ Three AWS security services are used to protect the application: Cognito, WAF, a
 
 Users must authenticate through Cognito to access the Post API endpoint from API Gateway, served through CloudFront.
 
-A Cognito User Pool stores and manages application users. The client generates a JWT token through Cognito, which is validated by API Gateway and allows access to the service (posting content).See table 4.
+A Cognito User Pool stores and manages application users. The client generates a JWT token through Cognito, which is validated by API Gateway and allows access to the service (posting content).See Table 4.
 
 <div align="center">
 
