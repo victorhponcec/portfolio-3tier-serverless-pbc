@@ -1,7 +1,7 @@
 # Project: Secure Serverless Multi-tier Application
 **Author:** Victor Ponce | **Contact:** [Linkedin](https://www.linkedin.com/in/victorhugoponce) | **Website:** [victorponce.com](https://victorponce.com)
 
-**Versión en Español:** [README.es.md](https://github.com/victorhponcec/portfolio-disaster-recovery-multi-region/blob/main/README.es.md)
+**Versión en Español:** [README.es.md](https://github.com/victorhponcec/portfolio-3tier-serverless-pbc/blob/main/README.es.md)
 
 ## 1. Overview
 
@@ -97,7 +97,7 @@ The process of writing to the database is decoupled using a FIFO queue (Main SQS
 
 The Retry workflow is triggered when the Process Post Lambda encounters problems processing posts. This can be caused by malformed messages, DynamoDB throughput being exceeded, Lambda timeouts, among other issues.
 
-A Redrive Policy is configured on the Main SQS queue to send messages that fail processing after three attempts to the DLQ SQS queue.
+A Redrive Policy is configured on the Main SQS queue to send messages that fail processing after three attempts to the DLQ SQS queue (maxReceiveCount SQS parameter).
 
 The Redrive DLQ Lambda picks up failed messages from the DLQ queue, inserts a retry record into the PostsDLQ table, and sends the message back to the Main SQS queue for reprocessing.
 
@@ -147,7 +147,7 @@ Three AWS security services are used to protect the application: Cognito, WAF, a
 
 Users must authenticate through Cognito to access the Post API endpoint from API Gateway, served through CloudFront.
 
-A Cognito User Pool stores and manages application users. The client generates a JWT token through Cognito, which is validated by API Gateway and allows access to the service (posting content).See Table 4.
+A Cognito User Pool stores and manages application users. The client generates a JWT token through Cognito, which is validated by API Gateway and allows access to the service (posting content). See Table 4.
 
 <div align="center">
 
@@ -159,7 +159,7 @@ A Cognito User Pool stores and manages application users. The client generates a
 | **Required Attribute**      | `email`                 | Email is mandatory for registration          |
 | **Attribute Type**          | `String`                | Email stored as string                       |
 | **Attribute Mutable**       | `true`                  | Users can update their email     
-<p><em>(Table 4 – WAF rules)</em></p>
+<p><em>(Table 4 – Cognito User Pool Configuration)</em></p>
 </div>
 
 ### 7.2 WAF

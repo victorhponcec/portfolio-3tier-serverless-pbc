@@ -1,13 +1,13 @@
 # Proyecto: Aplicación Multi-capa Serverless Segura
 **Autor:** Victor Ponce | **Contacto:** [Linkedin](https://www.linkedin.com/in/victorhugoponce) | **Sitio Web:** [victorponce.com](https://victorponce.com)
 
-**English Version:** [README.md](https://github.com/victorhponcec/portfolio-disaster-recovery-multi-region/blob/main/README.md)
+**English Version:** [README.md](https://github.com/victorhponcec/portfolio-3tier-serverless-pbc/blob/main/README.md)
 
 ## 1. Resumen General
 
-Esta infraestructura ejecuta una aplicación multi-capa utilizando exclusivamente componentes *serverless*. Las capas de la aplicación se dividen en: Capa de Presentación, que incluye autenticación, seguridad y componentes de acceso; Capa de Aplicación, que contiene la lógica central y el procesamiento; y la Capa de Base de Datos, que almacena el contenido y gestiona el control de fallos.
+Esta infraestructura corre una aplicación multi-capa utilizando exclusivamente componentes *serverless*. Las capas de la aplicación se dividen en: Capa de Presentación, que incluye autenticación, seguridad y componentes de acceso; Capa de Aplicación, que contiene la lógica central y el procesamiento; y la Capa de Base de Datos, que almacena el contenido y gestiona el control de fallos.
 
-La aplicación cuenta con dos flujos principales: Escritura (*Write*), donde el usuario publica contenido, y Lectura (*Read*), que permite visualizar las publicaciones. Existe un tercer flujo encargado de gestionar fallos de procesamiento en la escritura, el cual registra los errores y reintenta el envío a la cola principal.
+La aplicación cuenta con dos flujos principales: Escritura (*Write*), donde el usuario publica contenido, y Lectura (*Read*), que permite visualizar las publicaciones. Existe un tercer flujo encargado de gestionar fallos de procesamiento en la escritura, el cual registra los errores y reintentos, enviandos los mensajes de nuevo a la cola principal.
 
 <div align="center">
 
@@ -17,7 +17,7 @@ La aplicación cuenta con dos flujos principales: Escritura (*Write*), donde el 
 
 ## 2. Capa de Presentación
 
-La Capa de Presentación gestiona todas las peticiones mediante un dominio personalizado integrado con Route 53. CloudFront distribuye el contenido de forma segura (integrado con WAF y ACM) tanto para los flujos de lectura como de escritura. La autenticación para el flujo de Escritura (Post) es gestionada por Cognito.
+La Capa de Presentación gestiona todas las peticiones de usuario mediante un dominio integrado con Route 53. CloudFront distribuye el contenido de forma segura (integrado con WAF y ACM) tanto para los flujos de lectura como de escritura. La autenticación para el flujo de Escritura (Post) es gestionada por Cognito.
 
 ## 3. Capa de Aplicación
 
@@ -44,7 +44,7 @@ A continuación, la configuración detallada de las tablas:
 | -------------- | ------ | -------------------------------------------------- |
 | `PK`           | String | Clave de partición                                 |
 | `createdAt`    | String | Timestamp ISO para ordenamiento (más reciente primero) |
-| `userId`       | String | Identifica al autor de la publicación              |
+| `userId`       | String | Identifica al autor de la publicación (Post)              |
 
 | Nombre de Índice | Partition Key | Sort Key    | Proyección |
 | ---------------- | ------------- | ----------- | ---------- |
@@ -79,13 +79,13 @@ No requiere autenticación. Los usuarios acceden vía Route 53 y CloudFront, el 
 
 Permite publicar contenido. El acceso es vía CloudFront y API Gateway, pero este último exige autorización mediante Cognito para el endpoint (POST /post). 
 
-El proceso está desacoplado: la petición llega a una cola SQS FIFO. La Lambda de Procesamiento consume los mensajes en orden y los inserta en la tabla "Posts".
+Este proceso se encuentra desacoplado: El lambda de Escritura (Write Post) envía los mensajes a una cola SQS FIFO. La Lambda de Procesamiento (Process Post) consume los mensajes en orden y los inserta en la tabla "Posts".
 
 ### 5.3 Flujo de Reintentos (Retry)
 
-Se activa si la Lambda de procesamiento falla (mensajes malformados, límites de DynamoDB, etc.). 
+Se activa si la Lambda de procesamiento falla (mensajes malformados, límites de DynamoDB, timeouts del lambda, etc.). 
 
-Mediante una *Redrive Policy*, si un mensaje falla 3 veces en la cola principal, se envía a una SQS de "Letra Muerta" (DLQ). Una Lambda de recuperación toma estos fallos, registra el error en la tabla "PostsDLQ" y devuelve el mensaje a la cola principal para un nuevo ciclo, evitando bucles infinitos.
+Mediante una *Redrive Policy*, si un mensaje falla 3 veces en la cola principal (parámetro maxReceiveCount de SQS), se envía a una SQS al dead-letter queue (DLQ). Una Lambda de recuperación (Redrive DLQ) toma estos fallos, registra el error en la tabla "PostsDLQ" y devuelve el mensaje a la cola principal para un nuevo ciclo, evitando bucles infinitos.
 
 ```
 resource "aws_sqs_queue_redrive_policy" "posts_redrive" {
@@ -188,7 +188,7 @@ Si el token no es enviado, la solicitud es rechazada por falta de autorización.
 <p><em>(img. 4 – Invocación a Cloudfront sin Token de Cognito)</em></p>
 </div>
 
-Podemos verificar el estado de los mensajes en la consola de AWS. En la captura de abajo se observan las colas SQS principal y la de letra muerta (DLQ). Los mensajes en tránsito ("Messages in Flight") están siendo procesados por sus funciones Lambda correspondientes, mientras que los mensajes disponibles ("Messages Available") están a la espera de ser procesados:
+Podemos verificar el estado de los mensajes en la consola de AWS. En la captura de abajo se observan las colas SQS principal (MAIN SQS) y la de dead-letter queues (DLQ SQS). Los mensajes en tránsito ("Messages in Flight") están siendo procesados por las funciones Lambda correspondientes, mientras que los mensajes disponibles ("Messages Available") están a la espera de ser procesados:
 
 <div align="center">
 
@@ -225,3 +225,11 @@ Finalmente, podemos verificar nuestro flujo de Lectura invocando el endpoint HTT
 ![Overview Diagram](README/test-feed-cloudfront.png)
 <p><em>(img. 9 – Invocación a Cloudfront para flujo Read)</em></p>
 </div>
+
+## Conclusión
+
+Este proyecto demuestra el diseño e implementación de una aplicación multi-capas, basada en eventos y completamente serverless en AWS. Al aprovechar servicios gestionados como API Gateway, Lambda, SQS, DynamoDB, Cognito, CloudFront, WAF y CloudWatch, la arquitectura logra una alta disponibilidad, escalabilidad, tolerancia a fallos y seguridad sin depender de componentes de infraestructura tradicionales como instancias EC2 o grupos de Auto Scaling.
+
+El sistema está separado en las capas de Presentación, Aplicación y Base de Datos, incorporando procesamiento asíncrono y mecanismos de reintento para mejorar la resiliencia. El uso de SQS para desacoplar el flujo de trabajo de Escritura de la persistencia en la base de datos asegura que el sistema pueda absorber picos de tráfico, manejar fallos y mantener la integridad de los datos.
+
+Adicionalmente, la implementación de monitoreo, alertas y mejores prácticas de seguridad garantiza la visibilidad y protección contra el mal uso o la degradación del sistema. Esta arquitectura refleja los principios modernos de diseño nativo de la nube y un diseño de sistema robusto y tolerante a fallos.
